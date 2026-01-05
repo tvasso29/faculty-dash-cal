@@ -29,7 +29,11 @@
 <ul id="tomorrowList">Loading…</ul>
 
 <script>
-const icsUrl = "https://calendar.google.com/calendar/ical/c_c0efeb6a7b5178f23b479e66b826d463bd8b94ece71ff575678dfa1f75e7d1ed%40group.calendar.google.com/public/basic.ics";
+const icsUrl =
+  "https://api.allorigins.win/raw?url=" +
+  encodeURIComponent(
+    "https://calendar.google.com/calendar/ical/c_c0efeb6a7b5178f23b479e66b826d463bd8b94ece71ff575678dfa1f75e7d1ed%40group.calendar.google.com/public/basic.ics"
+  );
 
 function dateKey(date) {
   return date.getFullYear() +
