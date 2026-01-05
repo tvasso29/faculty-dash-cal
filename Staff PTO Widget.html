@@ -72,11 +72,14 @@ fetch(icsUrl)
       var hasTime = !!start[2];
       var endDate = end ? end[1] : startDate;
 
-      // Coverage = timed event today
-      if (hasTime && startDate === todayKey) {
-        todayCover.push(title);
-        return;
-      }
+      // Detect coverage by name in title (even if full-day)
+      var namePattern = /[A-Z][a-z]+ [A-Z][a-z]+/;
+      var isCoverage = namePattern.test(title) && !title.includes("[");
+
+      if (isCoverage && startDate === todayKey) {
+  todayCover.push(title);
+  return;
+}
 
       // PTO (all-day or multi-day)
       var subMatch = title.match(/\[(.*?)\]/);
