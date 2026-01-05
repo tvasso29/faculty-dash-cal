@@ -48,7 +48,7 @@ tomorrow.setDate(today.getDate() + 1);
 var todayKey = key(today);
 var tomorrowKey = key(tomorrow);
 
-fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(icsUrl))
+fetch(icsUrl)
   .then(function(r){ return r.text(); })
   .then(function(text){
     var events = text.split("BEGIN:VEVENT").slice(1);
