@@ -20,7 +20,11 @@ button.active {
   <button id="btnTomorrow" onclick="showTomorrow()">Tomorrow</button>
 </div>
 
-<ul id="ptoList">Loading…</ul>
+<h4>Out</h4>
+<ul id="outList"></ul>
+
+<h4>Coverage</h4>
+<ul id="coverList"></ul>
 </head>
 
 <body>
@@ -34,21 +38,22 @@ button.active {
 <script>
 var icsUrl = "https://calendar.google.com/calendar/ical/c_c0efeb6a7b5178f23b479e66b826d463bd8b94ece71ff575678dfa1f75e7d1ed%40group.calendar.google.com/public/basic.ics";
 
-var todayEvents = [];
-var tomorrowEvents = [];
+var todayOut = [];
+var tomorrowOut = [];
+var todayCover = [];
 
-function dateKey(d) {
-  return d.getFullYear().toString() +
-    ("0" + (d.getMonth()+1)).slice(-2) +
-    ("0" + d.getDate()).slice(-2);
+function key(d) {
+  return d.getFullYear() +
+    ("0"+(d.getMonth()+1)).slice(-2) +
+    ("0"+d.getDate()).slice(-2);
 }
 
 var today = new Date();
 var tomorrow = new Date();
-tomorrow.setDate(today.getDate() + 1);
+tomorrow.setDate(today.getDate()+1);
 
-var todayKey = dateKey(today);
-var tomorrowKey = dateKey(tomorrow);
+var todayKey = key(today);
+var tomorrowKey = key(tomorrow);
 
 fetch(icsUrl)
   .then(r => r.text())
@@ -57,36 +62,44 @@ fetch(icsUrl)
 
     events.forEach(e => {
       var summary = e.match(/SUMMARY:(.*)/);
-      var start = e.match(/DTSTART[^:]*:(\d{8})/);
-      var end = e.match(/DTEND[^:]*:(\d{8})/);
+      var start = e.match(/DTSTART[^:]*:(\d{8})(T\d{6})?/);
+      var end = e.match(/DTEND[^:]*:(\d{8})(T\d{6})?/);
 
       if (!summary || !start) return;
 
       var title = summary[1].replace(/\\n/g,"").trim();
       var startDate = start[1];
+      var hasTime = !!start[2];
       var endDate = end ? end[1] : startDate;
 
+      // Coverage = timed event today
+      if (hasTime && startDate === todayKey) {
+        todayCover.push(title);
+        return;
+      }
+
+      // PTO (all-day or multi-day)
       var subMatch = title.match(/\[(.*?)\]/);
       var subText = subMatch ? " — Sub: " + subMatch[1] : " — No Sub";
       var cleanTitle = title.replace(/\[.*?\]/, "").trim();
 
       if (todayKey >= startDate && todayKey < endDate) {
-        todayEvents.push(cleanTitle + subText);
+        todayOut.push(cleanTitle + subText);
       }
       if (tomorrowKey >= startDate && tomorrowKey < endDate) {
-        tomorrowEvents.push(cleanTitle + subText);
+        tomorrowOut.push(cleanTitle + subText);
       }
     });
 
     showToday();
   });
 
-function render(list) {
-  var ul = document.getElementById("ptoList");
+function render(list, id, emptyText) {
+  var ul = document.getElementById(id);
   ul.innerHTML = "";
 
   if (list.length === 0) {
-    ul.innerHTML = "<li>No one is out 🎉</li>";
+    ul.innerHTML = "<li>" + emptyText + "</li>";
     return;
   }
 
@@ -98,12 +111,15 @@ function render(list) {
 }
 
 function showToday() {
-  render(todayEvents);
+  render(todayOut, "outList", "No one is out 🎉");
+  render(todayCover, "coverList", "No coverage today");
   setActive("btnToday");
 }
 
 function showTomorrow() {
-  render(tomorrowEvents);
+  render(tomorrowOut, "outList", "No one is out");
+  document.getElementById("coverList").innerHTML =
+    "<li>Coverage shown for today only</li>";
   setActive("btnTomorrow");
 }
 
@@ -112,6 +128,7 @@ function setActive(id) {
   document.getElementById("btnTomorrow").classList.remove("active");
   document.getElementById(id).classList.add("active");
 }
+</script>
 </script>
 
 </body>
