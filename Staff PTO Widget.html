@@ -62,8 +62,8 @@ fetch(icsUrl)
 
     events.forEach(e => {
       var summary = e.match(/SUMMARY:(.*)/);
-      var start = e.match(/DTSTART[^:]*:(\d{8})(T\d{6})?/);
-      var end = e.match(/DTEND[^:]*:(\d{8})(T\d{6})?/);
+      var start = e.match(/DTSTART[^:]*:(\d{8})(T\d{6}Z?)?/);
+      var end = e.match(/DTEND[^:]*:(\d{8})(T\d{6}Z?)?/);
 
       if (!summary || !start) return;
 
