@@ -1,46 +1,46 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <style>button {
-  padding: 6px 12px;
-  margin-right: 4px;
-  border: 1px solid #ccc;
-  background: #f3f3f3;
-  cursor: pointer;
-  border-radius: 4px;
-}
+  <meta charset="utf-8">
 
-button.active {
-  background: #1a73e8;
-  color: white;
-  border-color: #1a73e8;
-}</style>
-<div style="margin-bottom:8px;">
-  <button id="btnToday" onclick="showToday()">Today</button>
-  <button id="btnTomorrow" onclick="showTomorrow()">Tomorrow</button>
-</div>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+    }
 
-<h4>Out</h4>
-<ul id="outList"></ul>
+    button {
+      padding: 6px 12px;
+      margin-right: 4px;
+      border: 1px solid #ccc;
+      background: #f3f3f3;
+      cursor: pointer;
+      border-radius: 4px;
+    }
 
-<h4>Coverage</h4>
-<ul id="coverList"></ul>
+    button.active {
+      background: #1a73e8;
+      color: white;
+      border-color: #1a73e8;
+    }
+  </style>
 </head>
 
 <body>
-<div style="margin-bottom:8px;">
-  <button id="btnToday" onclick="showToday()">Today</button>
-  <button id="btnTomorrow" onclick="showTomorrow()">Tomorrow</button>
-</div>
 
-<h4>Out</h4>
-<ul id="outList"></ul>
+  <div style="margin-bottom:8px;">
+    <button id="btnToday" onclick="showToday()">Today</button>
+    <button id="btnTomorrow" onclick="showTomorrow()">Tomorrow</button>
+  </div>
 
-<h4>Coverage</h4>
-<ul id="coverList"></ul>
+  <h4>Out</h4>
+  <ul id="outList"></ul>
 
-</body>
-  <script>
+  <h4>Coverage</h4>
+  <ul id="coverList"></ul>
+
+<script>
 var icsUrl = "https://calendar.google.com/calendar/ical/c_c0efeb6a7b5178f23b479e66b826d463bd8b94ece71ff575678dfa1f75e7d1ed%40group.calendar.google.com/public/basic.ics";
 
 var todayOut = [];
@@ -49,13 +49,13 @@ var todayCover = [];
 
 function key(d) {
   return d.getFullYear() +
-    ("0"+(d.getMonth()+1)).slice(-2) +
-    ("0"+d.getDate()).slice(-2);
+    ("0" + (d.getMonth() + 1)).slice(-2) +
+    ("0" + d.getDate()).slice(-2);
 }
 
 var today = new Date();
 var tomorrow = new Date();
-tomorrow.setDate(today.getDate()+1);
+tomorrow.setDate(today.getDate() + 1);
 
 var todayKey = key(today);
 var tomorrowKey = key(tomorrow);
@@ -72,15 +72,16 @@ fetch(icsUrl)
 
       if (!summary || !start) return;
 
-      var title = summary[1].replace(/\\n/g,"").trim();
+      var title = summary[1].replace(/\\n/g, "").trim();
       var startDate = start[1];
       var endDate = end ? end[1] : startDate;
 
-      // Coverage: name present, not a sub
+      // Coverage = contains a name, not a sub
       var namePattern = /[A-Z][a-z]+ [A-Z][a-z]+/;
       var isCoverage = namePattern.test(title) && !title.includes("[");
 
-      if (isCoverage && startDate === todayKey) {
+      // Coverage TODAY (range-based, works for all-day)
+      if (isCoverage && todayKey >= startDate && todayKey < endDate) {
         todayCover.push(title);
         return;
       }
@@ -93,6 +94,7 @@ fetch(icsUrl)
       if (todayKey >= startDate && todayKey < endDate) {
         todayOut.push(cleanTitle + subText);
       }
+
       if (tomorrowKey >= startDate && tomorrowKey < endDate) {
         tomorrowOut.push(cleanTitle + subText);
       }
@@ -136,4 +138,6 @@ function setActive(id) {
   document.getElementById(id).classList.add("active");
 }
 </script>
+
+</body>
 </html>
