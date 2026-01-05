@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>Staff PTO</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 12px;
-    background: white;
-  }
-  h3 {
-    margin: 8px 0 4px 0;
-  }
-  ul {
-    padding-left: 18px;
-    margin-top: 4px;
-  }
-  .nosub {
-    color: #777;
-  }
-</style>
+  <style>button {
+  padding: 6px 12px;
+  margin-right: 4px;
+  border: 1px solid #ccc;
+  background: #f3f3f3;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+button.active {
+  background: #1a73e8;
+  color: white;
+  border-color: #1a73e8;
+}</style>
+<div style="margin-bottom:8px;">
+  <button id="btnToday" onclick="showToday()">Today</button>
+  <button id="btnTomorrow" onclick="showTomorrow()">Tomorrow</button>
+</div>
+
+<ul id="ptoList">Loading…</ul>
 </head>
 
 <body>
@@ -34,79 +34,84 @@
 <script>
 var icsUrl = "https://calendar.google.com/calendar/ical/c_c0efeb6a7b5178f23b479e66b826d463bd8b94ece71ff575678dfa1f75e7d1ed%40group.calendar.google.com/public/basic.ics";
 
-function key(d) {
-  var y = d.getFullYear();
-  var m = ("0" + (d.getMonth()+1)).slice(-2);
-  var day = ("0" + d.getDate()).slice(-2);
-  return y + m + day;
+var todayEvents = [];
+var tomorrowEvents = [];
+
+function dateKey(d) {
+  return d.getFullYear().toString() +
+    ("0" + (d.getMonth()+1)).slice(-2) +
+    ("0" + d.getDate()).slice(-2);
 }
 
 var today = new Date();
 var tomorrow = new Date();
 tomorrow.setDate(today.getDate() + 1);
 
-var todayKey = key(today);
-var tomorrowKey = key(tomorrow);
+var todayKey = dateKey(today);
+var tomorrowKey = dateKey(tomorrow);
 
 fetch(icsUrl)
-  .then(function(r){ return r.text(); })
-  .then(function(text){
+  .then(r => r.text())
+  .then(text => {
     var events = text.split("BEGIN:VEVENT").slice(1);
-    var todayList = document.getElementById("today");
-    var tomorrowList = document.getElementById("tomorrow");
 
-    todayList.innerHTML = "";
-    tomorrowList.innerHTML = "";
+    events.forEach(e => {
+      var summary = e.match(/SUMMARY:(.*)/);
+      var start = e.match(/DTSTART[^:]*:(\d{8})/);
+      var end = e.match(/DTEND[^:]*:(\d{8})/);
 
-    var foundToday = false;
-    var foundTomorrow = false;
+      if (!summary || !start) return;
 
-    for (var i=0;i<events.length;i++) {
-      var e = events[i];
+      var title = summary[1].replace(/\\n/g,"").trim();
+      var startDate = start[1];
+      var endDate = end ? end[1] : startDate;
 
-      var summaryMatch = e.match(/SUMMARY:(.*)/);
-      var startMatch = e.match(/DTSTART[^:]*:(\d{8})/);
-      var endMatch = e.match(/DTEND[^:]*:(\d{8})/);
-
-      if (!summaryMatch || !startMatch) continue;
-
-      var title = summaryMatch[1].replace(/\\n/g,"").trim();
-      var start = startMatch[1];
-      var end = endMatch ? endMatch[1] : start;
-
-      // Extract sub [Name]
       var subMatch = title.match(/\[(.*?)\]/);
       var subText = subMatch ? " — Sub: " + subMatch[1] : " — No Sub";
-
       var cleanTitle = title.replace(/\[.*?\]/, "").trim();
 
-      if (todayKey >= start && todayKey < end) {
-        var li = document.createElement("li");
-        li.innerText = cleanTitle + subText;
-        todayList.appendChild(li);
-        foundToday = true;
+      if (todayKey >= startDate && todayKey < endDate) {
+        todayEvents.push(cleanTitle + subText);
       }
-
-      if (tomorrowKey >= start && tomorrowKey < end) {
-        var li2 = document.createElement("li");
-        li2.innerText = cleanTitle + subText;
-        tomorrowList.appendChild(li2);
-        foundTomorrow = true;
+      if (tomorrowKey >= startDate && tomorrowKey < endDate) {
+        tomorrowEvents.push(cleanTitle + subText);
       }
-    }
+    });
 
-    if (!foundToday) {
-      todayList.innerHTML = "<li>No one is out today 🎉</li>";
-    }
-
-    if (!foundTomorrow) {
-      tomorrowList.innerHTML = "<li>No one is out tomorrow</li>";
-    }
-  })
-  .catch(function(){
-    document.getElementById("today").innerHTML = "<li>Unable to load calendar</li>";
-    document.getElementById("tomorrow").innerHTML = "<li>Unable to load calendar</li>";
+    showToday();
   });
+
+function render(list) {
+  var ul = document.getElementById("ptoList");
+  ul.innerHTML = "";
+
+  if (list.length === 0) {
+    ul.innerHTML = "<li>No one is out 🎉</li>";
+    return;
+  }
+
+  list.forEach(item => {
+    var li = document.createElement("li");
+    li.textContent = item;
+    ul.appendChild(li);
+  });
+}
+
+function showToday() {
+  render(todayEvents);
+  setActive("btnToday");
+}
+
+function showTomorrow() {
+  render(tomorrowEvents);
+  setActive("btnTomorrow");
+}
+
+function setActive(id) {
+  document.getElementById("btnToday").classList.remove("active");
+  document.getElementById("btnTomorrow").classList.remove("active");
+  document.getElementById(id).classList.add("active");
+}
 </script>
 
 </body>
