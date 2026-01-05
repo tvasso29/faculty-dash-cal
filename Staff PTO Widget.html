@@ -9,23 +9,12 @@
       padding: 10px;
     }
 
-    button {
-      padding: 6px 12px;
-      margin-right: 4px;
-      border: 1px solid #ccc;
-      background: #f3f3f3;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-
-    button.active {
-      background: #1a73e8;
-      color: white;
-      border-color: #1a73e8;
+    h4 {
+      margin-bottom: 4px;
     }
 
     ul {
-      margin-top: 6px;
+      margin-top: 4px;
       padding-left: 18px;
     }
   </style>
@@ -33,90 +22,75 @@
 
 <body>
 
-<div style="margin-bottom:8px;">
-  <button id="btnToday" onclick="showToday()">Today</button>
-  <button id="btnTomorrow" onclick="showTomorrow()">Tomorrow</button>
-</div>
+<h4>Today</h4>
+<ul id="todayList">Loading…</ul>
 
-<ul id="eventList">Loading…</ul>
+<h4>Tomorrow</h4>
+<ul id="tomorrowList">Loading…</ul>
 
 <script>
-var icsUrl = "https://calendar.google.com/calendar/ical/c_c0efeb6a7b5178f23b479e66b826d463bd8b94ece71ff575678dfa1f75e7d1ed%40group.calendar.google.com/public/basic.ics";
+const icsUrl = "https://calendar.google.com/calendar/ical/c_c0efeb6a7b5178f23b479e66b826d463bd8b94ece71ff575678dfa1f75e7d1ed%40group.calendar.google.com/public/basic.ics";
 
-var todayEvents = [];
-var tomorrowEvents = [];
-
-function key(d) {
-  return d.getFullYear() +
-    ("0" + (d.getMonth()+1)).slice(-2) +
-    ("0" + d.getDate()).slice(-2);
+function dateKey(date) {
+  return date.getFullYear() +
+    ("0" + (date.getMonth() + 1)).slice(-2) +
+    ("0" + date.getDate()).slice(-2);
 }
 
-var today = new Date();
-var tomorrow = new Date();
+const today = new Date();
+const tomorrow = new Date();
 tomorrow.setDate(today.getDate() + 1);
 
-var todayKey = key(today);
-var tomorrowKey = key(tomorrow);
+const todayKey = dateKey(today);
+const tomorrowKey = dateKey(tomorrow);
 
 fetch(icsUrl)
-  .then(r => r.text())
+  .then(res => res.text())
   .then(text => {
-    var events = text.split("BEGIN:VEVENT").slice(1);
+    const events = text.split("BEGIN:VEVENT").slice(1);
+
+    const todayEvents = [];
+    const tomorrowEvents = [];
 
     events.forEach(e => {
-      var summary = e.match(/SUMMARY:(.*)/);
-      var start = e.match(/DTSTART[^:]*:(\d{8})/);
-      var end = e.match(/DTEND[^:]*:(\d{8})/);
+      const summary = e.match(/SUMMARY:(.*)/);
+      const startMatch = e.match(/DTSTART[^:]*:(\d{8})/);
+      const endMatch = e.match(/DTEND[^:]*:(\d{8})/);
 
-      if (!summary || !start) return;
+      if (!summary || !startMatch) return;
 
-      var title = summary[1].replace(/\\n/g,"").trim();
-      var startDate = start[1];
-      var endDate = end ? end[1] : startDate;
+      const title = summary[1].replace(/\\n/g, "").trim();
+      const start = startMatch[1];
+      const end = endMatch ? endMatch[1] : start;
 
-      if (todayKey >= startDate && todayKey < endDate) {
+      // Inclusive range handling for all-day events
+      if (todayKey >= start && todayKey < end) {
         todayEvents.push(title);
       }
 
-      if (tomorrowKey >= startDate && tomorrowKey < endDate) {
+      if (tomorrowKey >= start && tomorrowKey < end) {
         tomorrowEvents.push(title);
       }
     });
 
-    showToday();
+    render(todayEvents, "todayList", "No events today");
+    render(tomorrowEvents, "tomorrowList", "No events tomorrow");
   });
 
-function render(list) {
-  var ul = document.getElementById("eventList");
+function render(list, id, emptyText) {
+  const ul = document.getElementById(id);
   ul.innerHTML = "";
 
   if (list.length === 0) {
-    ul.innerHTML = "<li>No events</li>";
+    ul.innerHTML = `<li>${emptyText}</li>`;
     return;
   }
 
   list.forEach(item => {
-    var li = document.createElement("li");
+    const li = document.createElement("li");
     li.textContent = item;
     ul.appendChild(li);
   });
-}
-
-function showToday() {
-  render(todayEvents);
-  setActive("btnToday");
-}
-
-function showTomorrow() {
-  render(tomorrowEvents);
-  setActive("btnTomorrow");
-}
-
-function setActive(id) {
-  document.getElementById("btnToday").classList.remove("active");
-  document.getElementById("btnTomorrow").classList.remove("active");
-  document.getElementById(id).classList.add("active");
 }
 </script>
 
